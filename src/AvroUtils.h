@@ -5,21 +5,11 @@
 #include "KeyValueStruct.h"
 
 bool init_schema(const char * schema, avro_schema_t * avro_schema) {
-  const char * b = "{\"type\":\"record\",\
-  \"name\":\"Person\",\
-  \"fields\":[\
-     {\"name\": \"ID\", \"type\": \"long\"},\
-     {\"name\": \"First\", \"type\": \"string\"},\
-     {\"name\": \"Last\", \"type\": \"string\"},\
-     {\"name\": \"Phone\", \"type\": \"string\"},\
-     {\"name\": \"Age\", \"type\": \"int\"}]}";
-  // char * a = (char *)malloc(400 * sizeof(char));
-  char a[243];
-  strcpy(a, b);
-  printf("a\n");
-  printf("%s\n", a);
-  // return true;
-  return avro_schema_from_json_literal(a, avro_schema);
+  avro_schema_error_t e;
+  if (!avro_schema_from_json(schema, sizeof(schema), avro_schema, &e)) {
+    return true;
+  }
+  return true;
 }
 
 bool InsertToAvroRecord(KeyValueStruct * avroStruct, avro_datum_t & avro_record) {

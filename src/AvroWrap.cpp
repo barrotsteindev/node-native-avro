@@ -15,7 +15,7 @@ class AvroWrap {
     return regStr;
   }
 
-  static void V8ObjToStructArray(KeyValueStruct * * structArray,
+  static void V8ObjToStructArray(KeyValueStruct * structArray,
     const int & numberOfKeys, const v8::Local<v8::Array> keyList,
     const v8::Local<v8::Object> obj) {
       for (int i = 0; i < numberOfKeys; i++) {
@@ -25,17 +25,18 @@ class AvroWrap {
       }
   }
 
-  static KeyValueStruct * ParseToKeyValStruct(v8::Local<v8::String> & keyName,
+  static KeyValueStruct ParseToKeyValStruct(v8::Local<v8::String> & keyName,
     v8::Local<v8::Value> & keyValue) {
       KeyValueStruct currStruct;
       currStruct.key = (const char *)v8StringtoC_str(keyName).c_str();
       if (keyValue->IsString()) {
-        currStruct.type = avroType::AVRO_STRING_TYPE;
+        currStruct.type = AVRO_STRING_TYPE;
         currStruct.value = (const void *)v8StringtoC_str(keyValue->ToString())
                                                               .c_str();
       } else {
         printf("unsportted type in key: %s, skipping\n", currStruct.key);
       }
+      return currStruct;
   }
 
   static NAN_METHOD(Write) {
@@ -53,34 +54,28 @@ class AvroWrap {
     std::string schema(* Nan::Utf8String(v8Schema));
     v8::Local<v8::Array> keyNames = json->GetOwnPropertyNames();
     int keyLength = keyNames->Length();
-    KeyValueStruct * * avroStructs = (KeyValueStruct * *)
+    KeyValueStruct * avroStructs = (KeyValueStruct *)
                                      malloc(keyLength * sizeof(KeyValueStruct));
     V8ObjToStructArray(avroStructs, keyLength, keyNames, json);
     for (int i = 0; i < keyLength; i++) {
       avro_schema_t avroSchema;
-      const char * a = schema.c_str();
-      // const char a[] = "{\"type\":\"record\",\
-      // \"name\":\"Person\",\
-      // \"fields\":[\
-      //    {\"name\": \"ID\", \"type\": \"long\"},\
-      //    {\"name\": \"First\", \"type\": \"string\"},\
-      //    {\"name\": \"Last\", \"type\": \"string\"},\
-      //    {\"name\": \"Phone\", \"type\": \"string\"},\
-      //    {\"name\": \"Age\", \"type\": \"int\"}]}";
-      if (init_schema(a, & avroSchema)) {
-         printf("%s\n", a);
+      const char * cSchema = schema.c_str();
+      if (!init_schema(cSchema, & avroSchema)) {
+         return Nan::ThrowError("could not create avro schema");
       }
-      printf("after\n");
-      avro_datum_t currRec = avro_record(avroSchema);
-      // avro_datum_t currValue;
-      // KeyValueStruct * currAvroStruct = avroStructs[i];
-      // switch (currAvroStruct->type) {
-      //   case avroType::AVRO_STRING_TYPE :
-      //     currValue = avro_string((char *)currAvroStruct->value);
-      //   default:
-      //     printf("type %s is not supported\n", currAvroStruct->type);
-      // }
-      // avro_record_set(currRec, currAvroStruct->key, currValue);
+      avro_datum_t currRec = avro_datum_from_schema(avroSchema);
+      avro_datum_t currValue;
+      KeyValueStruct currAvroStruct = avroStructs[i];
+      enum avroType currType = currAvroStruct.type;
+      avro_value_iface_t  *iface = avro_generic_class_from_schema(avroSchema);
+
+      avro_value_t  val;
+      avro_generic_value_new(iface, & val);
+
+      if (currType == AVRO_STRING_TYPE) {
+        avro_value_set_string(& val, (char *)currAvroStruct.value);
+      }
+      // avro_record_set(currRec, currAvroStruct.key, currValue);
       // long int * bufferSize;
       // char * bufferBytes;
       // avro_bytes_get(currRec, & bufferBytes, bufferSize);

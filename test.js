@@ -6,12 +6,8 @@ const avro = require('./build/Release/native-avro.node');
 const testScehma = "{\"type\":\"record\",\
   \"name\":\"Person\",\
   \"fields\":[\
-     {\"name\": \"ID\", \"type\": \"long\"},\
-     {\"name\": \"First\", \"type\": \"string\"},\
-     {\"name\": \"Last\", \"type\": \"string\"},\
-     {\"name\": \"Phone\", \"type\": \"string\"},\
-     {\"name\": \"Age\", \"type\": \"int\"}]}";
+     {\"name\": \"c\", \"type\": \"string\"}]}";
 
 console.log(testScehma);
 
-avro.write(testScehma, {'a': 'b'});
+avro.write(testScehma, {'c': 'b'});
