@@ -58,6 +58,7 @@ class AvroWrap {
                                      malloc(keyLength * sizeof(KeyValueStruct));
     V8ObjToStructArray(avroStructs, keyLength, keyNames, json);
     avro_schema_t avroSchema;
+    size_t sizeOfRecord = 0;
     if (!init_schema(schema.c_str(), & avroSchema)) {
        return Nan::ThrowError("could not create avro schema");
     }
@@ -81,11 +82,13 @@ class AvroWrap {
       printf("%d\n", avroSize);
       avro_writer_t avroMemoryWriter = avro_writer_memory(buf, avroSize);
       avro_value_write(avroMemoryWriter, & avroRecord);
-      printf("%s\n", buf);
+      avro_value_sizeof(& curVal, & avroSize);
+      printf("%d\n", avroSize);
 
-      info.GetReturnValue().Set(Nan::NewBuffer(buf,
-                                   sizeof(buf)).ToLocalChecked());
+
     }
+    info.GetReturnValue().Set(Nan::NewBuffer(buf,
+                                 sizeof(buf)).ToLocalChecked());
   }
 };
 
