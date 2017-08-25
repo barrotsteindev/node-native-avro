@@ -62,19 +62,18 @@ class AvroWrap {
        return Nan::ThrowError("could not create avro schema");
     }
     avro_value_iface_t * iface = avro_generic_class_from_schema(avroSchema);
-    avro_value_t val;
+    avro_value_t avroRecord;
+    avro_generic_value_new(iface, & avroRecord);
     for (int i = 0; i < keyLength; i++) {
       KeyValueStruct currAvroStruct = avroStructs[i];
       enum avroType currType = currAvroStruct.type;
-      avro_generic_value_new(iface, & val);
-      avro_value_t curKey;
+      avro_value_t curVal;
       size_t avroSize;
-      avro_value_get_by_name(& val, currAvroStruct.key,
-                             & curKey, & avroSize);
+      avro_value_get_by_name(& avroRecord, currAvroStruct.key,
+                             & curVal, & avroSize);
       if (currType == AVRO_STRING_TYPE) {
         if (avro_value_set_string(& curKey, (char *)currAvroStruct.value)) {
-          Nan::ThrowError("could not serialize key");
-          return;
+          return Nan::ThrowError("could not serialize key");
         }
       }
       avro_value_sizeof(& curKey, & avroSize);
