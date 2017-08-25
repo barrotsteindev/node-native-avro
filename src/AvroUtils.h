@@ -6,8 +6,8 @@
 
 bool init_schema(const char * schema, avro_schema_t * avro_schema) {
   avro_schema_error_t e;
-  if (!avro_schema_from_json(schema, sizeof(schema), avro_schema, &e)) {
-    return true;
+  if (avro_schema_from_json(schema, sizeof(schema), avro_schema, &e)) {
+    return false;
   }
   return true;
 }

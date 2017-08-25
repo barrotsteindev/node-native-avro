@@ -57,30 +57,35 @@ class AvroWrap {
     KeyValueStruct * avroStructs = (KeyValueStruct *)
                                      malloc(keyLength * sizeof(KeyValueStruct));
     V8ObjToStructArray(avroStructs, keyLength, keyNames, json);
+    avro_schema_t avroSchema;
+    if (!init_schema(schema.c_str(), & avroSchema)) {
+       return Nan::ThrowError("could not create avro schema");
+    }
+    avro_value_iface_t * iface = avro_generic_class_from_schema(avroSchema);
+    avro_value_t val;
     for (int i = 0; i < keyLength; i++) {
-      avro_schema_t avroSchema;
-      const char * cSchema = schema.c_str();
-      if (!init_schema(cSchema, & avroSchema)) {
-         return Nan::ThrowError("could not create avro schema");
-      }
-      avro_datum_t currRec = avro_datum_from_schema(avroSchema);
-      avro_datum_t currValue;
       KeyValueStruct currAvroStruct = avroStructs[i];
       enum avroType currType = currAvroStruct.type;
-      avro_value_iface_t  *iface = avro_generic_class_from_schema(avroSchema);
-
-      avro_value_t  val;
       avro_generic_value_new(iface, & val);
-
+      avro_value_t curKey;
+      size_t avroSize;
+      avro_value_get_by_name(& val, currAvroStruct.key,
+                             & curKey, & avroSize);
       if (currType == AVRO_STRING_TYPE) {
-        avro_value_set_string(& val, (char *)currAvroStruct.value);
+        if (avro_value_set_string(& curKey, (char *)currAvroStruct.value)) {
+          Nan::ThrowError("could not serialize key");
+          return;
+        }
       }
-      // avro_record_set(currRec, currAvroStruct.key, currValue);
-      // long int * bufferSize;
-      // char * bufferBytes;
-      // avro_bytes_get(currRec, & bufferBytes, bufferSize);
-      // info.GetReturnValue().Set(Nan::NewBuffer(bufferBytes,
-      //                              sizeof(bufferBytes)).ToLocalChecked());
+      avro_value_sizeof(& curKey, & avroSize);
+      char * buf = (char *)malloc(avroSize);
+      printf("%d\n", avroSize);
+      avro_writer_t avroMemoryWriter = avro_writer_memory(buf, avroSize);
+      avro_value_write(avroMemoryWriter, & val);
+      printf("%s\n", buf);
+
+      info.GetReturnValue().Set(Nan::NewBuffer(buf,
+                                   sizeof(buf)).ToLocalChecked());
     }
   }
 };

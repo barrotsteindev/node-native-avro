@@ -10,4 +10,5 @@ const testScehma = "{\"type\":\"record\",\
 
 console.log(testScehma);
 
-avro.write(testScehma, {'c': 'b'});
+let avroBuf = avro.write(testScehma, {'c': 'ff'});
+console.log(avroBuf.toString());
