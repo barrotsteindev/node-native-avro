@@ -72,15 +72,15 @@ class AvroWrap {
       avro_value_get_by_name(& avroRecord, currAvroStruct.key,
                              & curVal, & avroSize);
       if (currType == AVRO_STRING_TYPE) {
-        if (avro_value_set_string(& curKey, (char *)currAvroStruct.value)) {
+        if (avro_value_set_string(& curVal, (char *)currAvroStruct.value)) {
           return Nan::ThrowError("could not serialize key");
         }
       }
-      avro_value_sizeof(& curKey, & avroSize);
+      avro_value_sizeof(& curVal, & avroSize);
       char * buf = (char *)malloc(avroSize);
       printf("%d\n", avroSize);
       avro_writer_t avroMemoryWriter = avro_writer_memory(buf, avroSize);
-      avro_value_write(avroMemoryWriter, & val);
+      avro_value_write(avroMemoryWriter, & avroRecord);
       printf("%s\n", buf);
 
       info.GetReturnValue().Set(Nan::NewBuffer(buf,
