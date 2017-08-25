@@ -84,11 +84,11 @@ class AvroWrap {
       avro_value_write(avroMemoryWriter, & avroRecord);
       avro_value_sizeof(& curVal, & avroSize);
       printf("%d\n", avroSize);
-
+      info.GetReturnValue().Set(Nan::NewBuffer(buf,
+                                   sizeof(buf)).ToLocalChecked());
 
     }
-    info.GetReturnValue().Set(Nan::NewBuffer(buf,
-                                 sizeof(buf)).ToLocalChecked());
+
   }
 };
 
