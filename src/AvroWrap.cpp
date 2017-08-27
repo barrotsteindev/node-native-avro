@@ -15,7 +15,7 @@ class AvroWrap {
     return regStr;
   }
 
-  static void V8ObjToStructArray(KeyValueStruct * structArray,
+  static void V8ObjToStructArray(KeyValueStruct * * structArray,
     const int & numberOfKeys, const v8::Local<v8::Array> keyList,
     const v8::Local<v8::Object> obj) {
       for (int i = 0; i < numberOfKeys; i++) {
@@ -23,18 +23,20 @@ class AvroWrap {
         v8::Local<v8::Value> keyValue = obj->Get(keyName);
         structArray[i] = ParseToKeyValStruct(keyName, keyValue);
       }
+      printf("arr: %s\n", structArray[0]->key);
   }
 
-  static KeyValueStruct ParseToKeyValStruct(v8::Local<v8::String> & keyName,
+  static KeyValueStruct * ParseToKeyValStruct(v8::Local<v8::String> & keyName,
     v8::Local<v8::Value> & keyValue) {
-      KeyValueStruct currStruct;
-      currStruct.key = (const char *)v8StringtoC_str(keyName).c_str();
+      KeyValueStruct * currStruct = (KeyValueStruct *)malloc(sizeof(KeyValueStruct));
+      currStruct->key = (const char *)v8StringtoC_str(keyName).c_str();
+      printf("%s\n", currStruct->key);
       if (keyValue->IsString()) {
-        currStruct.type = AVRO_STRING_TYPE;
-        currStruct.value = (const void *)v8StringtoC_str(keyValue->ToString())
+        currStruct->type = AVRO_STRING_TYPE;
+        currStruct->value = (const void *)v8StringtoC_str(keyValue->ToString())
                                                               .c_str();
       } else {
-        printf("unsportted type in key: %s, skipping\n", currStruct.key);
+        printf("unsportted type in key: %s, skipping\n", currStruct->key);
       }
       return currStruct;
   }
@@ -54,7 +56,7 @@ class AvroWrap {
     std::string schema(* Nan::Utf8String(v8Schema));
     v8::Local<v8::Array> keyNames = json->GetOwnPropertyNames();
     int keyLength = keyNames->Length();
-    KeyValueStruct * avroStructs = (KeyValueStruct *)
+    KeyValueStruct * * avroStructs = (KeyValueStruct * *)
                                      malloc(keyLength * sizeof(KeyValueStruct));
     V8ObjToStructArray(avroStructs, keyLength, keyNames, json);
     avro_schema_t avroSchema;
@@ -66,29 +68,31 @@ class AvroWrap {
     avro_value_t avroRecord;
     avro_generic_value_new(iface, & avroRecord);
     for (int i = 0; i < keyLength; i++) {
-      KeyValueStruct currAvroStruct = avroStructs[i];
-      enum avroType currType = currAvroStruct.type;
+      KeyValueStruct * currAvroStruct = avroStructs[i];
+      enum avroType currType = currAvroStruct->type;
       avro_value_t curVal;
       size_t avroSize;
-      avro_value_get_by_name(& avroRecord, currAvroStruct.key,
+      printf("key: %s, i: %d\n", avroStructs[0]->key, i);
+      avro_value_get_by_name(& avroRecord, currAvroStruct->key,
                              & curVal, & avroSize);
       if (currType == AVRO_STRING_TYPE) {
-        if (avro_value_set_string(& curVal, (char *)currAvroStruct.value)) {
+        if (avro_value_set_string(& curVal, (char *)currAvroStruct->value)) {
           return Nan::ThrowError("could not serialize key");
         }
       }
+      const char * test;
+      avro_value_get_string(& curVal, & test, & avroSize);
+      printf("test: %s\n", test);
       avro_value_sizeof(& curVal, & avroSize);
-      char * buf = (char *)malloc(avroSize);
-      printf("%d\n", avroSize);
-      avro_writer_t avroMemoryWriter = avro_writer_memory(buf, avroSize);
-      avro_value_write(avroMemoryWriter, & avroRecord);
-      avro_value_sizeof(& curVal, & avroSize);
-      printf("%d\n", avroSize);
-      info.GetReturnValue().Set(Nan::NewBuffer(buf,
-                                   sizeof(buf)).ToLocalChecked());
-
+      sizeOfRecord += avroSize;
     }
-
+    avro_value_sizeof(& avroRecord, & sizeOfRecord);
+    char * buf = (char *)malloc(sizeOfRecord);
+    printf("%d\n", sizeOfRecord);
+    avro_writer_t avroMemoryWriter = avro_writer_memory(buf, sizeOfRecord);
+    avro_value_write(avroMemoryWriter, & avroRecord);
+    info.GetReturnValue().Set(Nan::NewBuffer(buf,
+                                 sizeof(buf)).ToLocalChecked());
   }
 };
 
