@@ -3,7 +3,7 @@
 
 extern bool init_schema(const char * schema, avro_schema_t * avro_schema) {
   avro_schema_error_t e;
-  if (avro_schema_from_json(schema, (strlen(schema) - 1), avro_schema, &e)) {
+  if (avro_schema_from_json(schema, (strlen(schema) - 1), avro_schema, & e)) {
     return false;
   }
   return true;
@@ -17,15 +17,11 @@ extern bool InsertToAvroRecord(struct KeyValueStruct * avroStruct,
       & curVal, & avroSize);
     switch (avroStruct->type) {
       case AVRO_INT_TYPE: {
-        bool setInt = !avro_value_set_int(& curVal,
-          *(int32_t *)avroStruct->value);
-        return setInt;
+        return !avro_value_set_int(& curVal, *(int32_t *)avroStruct->value);
         break;
       }
       case AVRO_STRING_TYPE: {
-        bool setString = !avro_value_set_string(& curVal,
-          (char *)avroStruct->value);
-        return setString;
+        return !avro_value_set_string(& curVal, (char *)avroStruct->value);
         break;
       }
       default:
