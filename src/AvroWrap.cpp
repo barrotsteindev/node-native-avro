@@ -40,7 +40,6 @@ class AvroWrap {
       currStruct->key = (char *)malloc(sizeof(key));
       strcpy(currStruct->key, key);
       if (keyValue->IsString()) {
-        printf("string\n");
         currStruct->type = AVRO_STRING_TYPE;
         const char * value = v8StringtoC_str(keyValue->ToString()).c_str();
         char * value_ptr = (char *)malloc(sizeof(value));
@@ -85,8 +84,7 @@ class AvroWrap {
       return Nan::ThrowError("could not allocate memory");
     }
     V8ObjToStructArray(avroStructs, keyLength, keyNames, json);
-    avro_schema_t avroSchema = NULL;
-    size_t sizeOfRecord = 0;
+    avro_schema_t avroSchema;
     const char * strSchema = schema.c_str();
     if (!init_schema(strSchema, & avroSchema)) {
        return Nan::ThrowError("could not create avro schema");
@@ -96,46 +94,21 @@ class AvroWrap {
     avro_generic_value_new(iface, & avroRecord);
     for (int i = 0; i < keyLength; i++) {
       KeyValueStruct * currAvroStruct = avroStructs[i];
-      enum avroType currType = currAvroStruct->type;
-      avro_value_t curVal;
-      size_t avroSize;
-      avro_value_get_by_name(& avroRecord, currAvroStruct->key,
-                             & curVal, & avroSize);
-      if (currType == AVRO_STRING_TYPE) {
-        if (avro_value_set_string(& curVal, (char *)currAvroStruct->value)) {
-          return Nan::ThrowError("could not serialize key");
-        }
-      } else if (currType == AVRO_INT_TYPE) {
-        if (avro_value_set_int(& curVal, *(int32_t *)currAvroStruct->value)) {
-          return Nan::ThrowError("could not serialize key");
-        }
+      if (!InsertToAvroRecord(currAvroStruct, avroRecord)) {
+        return Nan::ThrowError("could not serialize to avro");
       }
       delete_struct(currAvroStruct);
     }
     free(avroStructs);
-    avro_value_sizeof(& avroRecord, & sizeOfRecord);
-    char * buf = (char *)malloc(sizeOfRecord + 1);
-    printf("%d\n", sizeOfRecord);
-    avro_writer_t avroMemoryWriter = avro_writer_memory(buf, sizeOfRecord);
     avro_file_writer_t file_writer;
-    FILE memStream;
-    FILE * fStream = fopen("test.avro", "w+");
+    FILE * fStream = fopen("out.avro", "w+");
     if (avro_file_writer_create_fp(fStream, "", 1, avroSchema, & file_writer)) {
-      printf("err: %s\n", avro_strerror());
+      return Nan::ThrowError("Could not create memory stream");
     }
-
-    // avro_writer_file(& memStream);
-    // size_t memSize;
-    printf("gonna write\n");
     avro_file_writer_append_value(file_writer, & avroRecord);
-    printf("written\n");
     avro_file_writer_close(file_writer);
-    avro_value_write(avroMemoryWriter, & avroRecord);
-    // if (!WriteBufToStream(& memStream, buf, avro_writer_tell(avroMemoryWriter))) {
-    //   return Nan::ThrowError("could not create memory stream");
-    // }
-    info.GetReturnValue().Set(Nan::NewBuffer(buf,
-                                 sizeOfRecord).ToLocalChecked());
+    // info.GetReturnValue().Set(Nan::NewBuffer(buf,
+    //                              sizeOfRecord).ToLocalChecked());
     avro_value_iface_decref(iface);
     avro_schema_decref(avroSchema);
   }

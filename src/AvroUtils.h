@@ -20,16 +20,18 @@ bool InsertToAvroRecord(KeyValueStruct * avroStruct, avro_datum_t & avro_record)
   }
 }
 
-// bool OpenMemoryStream(FILE * stream, size_t * stream_size) {
-//   stream = open_memstream(stream, stream_size);
-//   return stream == NULL;
-// }
-
-bool WriteBufToStream(FILE * stream, char * buf, size_t avroSize) {
-  stream = fopen("test.avro", "w+");
-  fwrite(buf, 1, avroSize, stream);
-  fclose(stream);
-  return true;
+bool InsertToAvroRecord(KeyValueStruct * avroStruct, avro_value_t & avroRecord) {
+  avro_value_t curVal;
+  size_t avroSize;
+  avro_value_get_by_name(& avroRecord, avroStruct->key,
+    & curVal, & avroSize);
+  if (avroStruct->type == avroType::AVRO_STRING_TYPE) {
+    return !avro_value_set_string(& curVal, (char *)avroStruct->value);
+  } else if (avroStruct->type == avroType::AVRO_INT_TYPE) {
+    return !avro_value_set_int(& curVal, *(int32_t *)avroStruct->value);
+  }
+  printf("unkown type\n");
+  return false;
 }
 
 #endif // SRC_AVROUTILS_H_
