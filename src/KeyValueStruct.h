@@ -14,6 +14,9 @@ typedef struct KeyValueStruct {
   char * key;
 };
 
+bool createStruct(struct KeyValueStruct * ptr, const char * key,
+  enum avroType type, void * data);
+
 bool delete_struct(struct KeyValueStruct * self);
 #ifdef __cplusplus
 }
