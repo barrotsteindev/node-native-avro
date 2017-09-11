@@ -7,7 +7,7 @@ const testScehma = "{\"type\":\"record\",\
      {\"name\" : \"d\", \"type\": \"string\"},\
      {\"name\" : \"e\", \"type\": \"int\"}]}";
 
-for (let i = 0; i < 10000000; i++) {
+for (let i = 0; i < 1000; i++) {
   avro.write(testScehma, {'c': 15, 'd': 'abc', 'e': -10});
 }
 

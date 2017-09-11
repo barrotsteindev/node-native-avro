@@ -38,30 +38,28 @@ class AvroWrap {
         return NULL;
       }
       const char * key = v8StringtoC_str(keyName);
-
+      void * value_ptr;
+      enum avroType currType;
       if (keyValue->IsString()) {
         const char * value = v8StringtoC_str(keyValue->ToString());
-        char * value_ptr = (char *)malloc(sizeof(value));
-        strcpy(value_ptr, value);
-        if (!createStruct(currStruct, key, AVRO_STRING_TYPE, value_ptr)) {
-          return NULL;
-        }
+        value_ptr = (char *)malloc(sizeof(value));
+        strcpy((char *)value_ptr, value);
+        currType = AVRO_STRING_TYPE;
       } else if (keyValue->IsNumber()) {
-        currStruct->type = AVRO_INT_TYPE;
+        currType = AVRO_INT_TYPE;
         if (keyValue->IsInt32()) {
-          void * value_ptr = malloc(sizeof(int *));
+          value_ptr = malloc(sizeof(int *));
           int32_t intValue = keyValue->Int32Value();
           memcpy(value_ptr, (void *)& intValue, sizeof(int *));
-          if (!createStruct(currStruct, key, AVRO_INT_TYPE, value_ptr)) {
-            return NULL;
-          }
         } else if (keyValue->IsUint32()) {
           uint * value_ptr = (uint *)malloc(sizeof(uint));
           value_ptr = (uint *)keyValue->Uint32Value();
-          currStruct->value = (const void *)value_ptr;
         }
       } else {
         printf("unsportted type in key: %s, skipping\n", currStruct->key);
+        return NULL;
+      }
+      if (!createStruct(currStruct, key, currType, value_ptr)) {
         return NULL;
       }
       return currStruct;
