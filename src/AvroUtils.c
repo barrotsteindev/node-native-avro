@@ -30,3 +30,33 @@ extern bool InsertToAvroRecord(struct KeyValueStruct * avroStruct,
       break;
     }
 }
+
+extern avro_value_t * SeralizeToAvro(struct KeyValueStruct * * avroStructArray,
+  int keyLength, avro_schema_t * avroSchema, avro_value_iface_t * iface) {
+    avro_value_t * avroRecord = (avro_value_t *)malloc(sizeof(avro_value_t *));
+    if (avroRecord == NULL) {
+      return NULL;
+    }
+    avro_generic_value_new(iface, avroRecord);
+    for (int i = 0; i < keyLength; i++) {
+      struct KeyValueStruct * currAvroStruct = avroStructArray[i];
+      if (!InsertToAvroRecord(currAvroStruct, avroRecord)) {
+        return NULL;
+      }
+      delete_struct(currAvroStruct);
+    }
+    free(avroStructArray);
+    return avroRecord;
+}
+
+extern bool WriteAvroToStream(FILE * stream, avro_value_t * avroRecord,
+  avro_value_iface_t * iface, avro_schema_t * avroSchemaPtr) {
+    avro_schema_t avroSchema = (*avroSchemaPtr);
+    avro_file_writer_t file_writer;
+    if (avro_file_writer_create_fp(stream, "", 1, avroSchema, & file_writer)) {
+      return false;
+    }
+    avro_file_writer_append_value(file_writer, avroRecord);
+    avro_file_writer_close(file_writer);
+    return true;
+  }

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <nan.h>
 #include <avro.h>
 #include "KeyValueStruct.h"
@@ -87,32 +88,27 @@ class AvroWrap {
     if (!V8ObjToStructArray(avroStructs, keyLength, keyNames, json)) {
       return Nan::ThrowError("could not parse json array");
     }
-    avro_schema_t avroSchema;
     const char * strSchema = * Nan::Utf8String(info[0]->ToString());
+    avro_schema_t avroSchema;
     if (!init_schema(strSchema, & avroSchema)) {
-       return Nan::ThrowError("could not create avro schema");
+       return Nan::ThrowError("cloud not parse schema");
     }
     avro_value_iface_t * iface = avro_generic_class_from_schema(avroSchema);
-    avro_value_t avroRecord;
-    avro_generic_value_new(iface, & avroRecord);
-    for (int i = 0; i < keyLength; i++) {
-      KeyValueStruct * currAvroStruct = avroStructs[i];
-      if (!InsertToAvroRecord(currAvroStruct, & avroRecord)) {
-        return Nan::ThrowError("could not serialize to avro");
-      }
-      delete_struct(currAvroStruct);
+    avro_value_t * avroRecord = SeralizeToAvro(avroStructs, keyLength,
+                                               & avroSchema, iface);
+    if (avroRecord == NULL) {
+      return Nan::ThrowError("could not create avro record");
     }
-    free(avroStructs);
-    avro_file_writer_t file_writer;
-    FILE * fStream = fopen("out.avro", "w+");
-    if (avro_file_writer_create_fp(fStream, "", 1, avroSchema, & file_writer)) {
-      return Nan::ThrowError("Could not create memory stream");
+    char * memStreamContent;
+    size_t memStreamSize;
+    FILE * memStream = open_memstream(& memStreamContent, & memStreamSize);
+    if (!WriteAvroToStream(memStream, avroRecord, iface, & avroSchema)) {
+      return Nan::ThrowError("could not write avro record to buffer");
     }
-    avro_file_writer_append_value(file_writer, & avroRecord);
-    avro_file_writer_close(file_writer);
-    // info.GetReturnValue().Set(Nan::NewBuffer(buf,
-    //                              sizeOfRecord).ToLocalChecked());
-    avro_value_decref(& avroRecord);
+    info.GetReturnValue().Set(Nan::NewBuffer(memStreamContent,
+      memStreamSize).ToLocalChecked());
+
+    avro_value_decref(avroRecord);
     avro_value_iface_decref(iface);
     avro_schema_decref(avroSchema);
   }
