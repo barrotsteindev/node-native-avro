@@ -25,7 +25,7 @@ extern bool InsertToAvroRecord(struct KeyValueStruct * avroStruct,
         break;
       }
       default:
-      printf("unsportted type %s key\n", avroStruct->key);
+      printf("unsportted type in struct %s key\n", avroStruct->key);
       return false;
       break;
     }

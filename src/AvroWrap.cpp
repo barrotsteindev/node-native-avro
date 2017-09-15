@@ -1,14 +1,17 @@
 #include <stdio.h>
 #include <nan.h>
 #include <avro.h>
+#include "AsyncAvroWriter.h"
 #include "KeyValueStruct.h"
 #include "AvroUtils.h"
 
 class AvroWrap {
  public:
   static NAN_MODULE_INIT(Init) {
-    target->Set(Nan::New("write").ToLocalChecked(),
-      Nan::New<v8::FunctionTemplate>(Write)->GetFunction());
+    target->Set(Nan::New("writeSync").ToLocalChecked(),
+      Nan::New<v8::FunctionTemplate>(WriteSync)->GetFunction());
+      target->Set(Nan::New("write").ToLocalChecked(),
+        Nan::New<v8::FunctionTemplate>(Write)->GetFunction());
   }
 
   static char * v8StringtoC_str(const v8::Local<v8::String> & v8Str) {
@@ -66,6 +69,41 @@ class AvroWrap {
   }
 
   static NAN_METHOD(Write) {
+    if (info.Length() != 3) {
+      return Nan::ThrowError("Wrong Number of Arguments");
+    }
+    if (!info[0]->IsString()) {
+      return Nan::ThrowTypeError("First param must be a string");
+    }
+    if (!info[1]->IsObject()) {
+      return Nan::ThrowTypeError("Second param must be a json object");
+    }
+    if(!info[2]->IsFunction()) {
+      return Nan::ThrowTypeError("Third param must be a callback function");
+    }
+    // todo: check that 3rd param is function
+    Nan::Callback * callback = new Nan::Callback(info[2].As<v8::Function>());
+
+    v8::Local<v8::Object> json = info[1]->ToObject();
+    v8::Local<v8::Array> keyNames = json->GetOwnPropertyNames();
+    int keyLength = keyNames->Length();
+    KeyValueStruct * * avroStructs = (KeyValueStruct * *)
+                                     malloc(keyLength * sizeof(KeyValueStruct));
+    if (avroStructs == NULL) {
+      return Nan::ThrowError("could not allocate memory");
+    }
+    if (!V8ObjToStructArray(avroStructs, keyLength, keyNames, json)) {
+      return Nan::ThrowError("could not parse json array");
+    }
+    const char * strSchema = * Nan::Utf8String(info[0]->ToString());
+
+    Nan::AsyncQueueWorker(new AsyncAvroWriter(callback, avroStructs,
+                                              strSchema, keyLength));
+
+
+  }
+
+  static NAN_METHOD(WriteSync) {
     if (info.Length() != 2) {
       return Nan::ThrowError("Wrong Number of Arguments");
     }
