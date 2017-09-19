@@ -7,15 +7,15 @@ const testScehma = "{\"type\":\"record\",\
      {\"name\" : \"d\", \"type\": \"string\"},\
      {\"name\" : \"e\", \"type\": \"int\"}]}";
 
-for (let i = 0; i < 1000; i++) {
-  avro.write(testScehma, {'c': 15, 'd': 'abc', 'e': -10});
-}
+//for (let i = 0; i < 1000; i++) {
+//  avro.write(testScehma, {'c': 15, 'e': -10});
+//}
 
-let avroBuf = avro.write(testScehma, {'c': 1121215, 'd': 'abcdasfas', 'e': -10});
+let avroBuf = avro.write(testScehma, {'c': 1121215, 'e': -10});
 
 if(fs.existsSync('out.avro')) {
-  fs.unlinkSync('out.avro');
-}
+   fs.unlinkSync('out.avro');
+ }
 let writeStream = fs.createWriteStream('out.avro');
 writeStream.write(avroBuf);
 writeStream.close();

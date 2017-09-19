@@ -6,7 +6,9 @@
       "libraries": [ "-lavro" ],
       "include_dirs" : [
         "<!(node -e \"require('nan')\")",
-        "<(module_root_dir)/"
+        "<(module_root_dir)/",
+        "/usr/local/homebrew/lib",
+        "/usr/local/homebrew/include"
       ],
       'cflags!': [ '-fno-exceptions' ],
       'cflags_cc!': [ '-fno-exceptions' ]
