@@ -17,7 +17,7 @@ class AvroWrap {
       Nan::New<v8::FunctionTemplate>(Write)->GetFunction());
   }
 
-  static char * v8StringtoC_str(const v8::Local<v8::String> & v8Str) {
+  static inline char * v8StringtoC_str(const v8::Local<v8::String> & v8Str) {
     return * Nan::Utf8String(v8Str);
   }
 
@@ -47,7 +47,8 @@ class AvroWrap {
       void * value_ptr = NULL;
       enum avroType currType;
       if (keyValue->IsString()) {
-        const char * value = v8StringtoC_str(keyValue->ToString());
+//        const char * value = v8StringtoC_str(keyValue->ToString());
+          const char * value = * Nan::Utf8String(keyValue->ToString());
         value_ptr = (char *)malloc(sizeof(value));
         strcpy((char *)value_ptr, value);
         currType = AVRO_STRING_TYPE;
@@ -104,7 +105,7 @@ class AvroWrap {
       return Nan::ThrowError("could not create avro record");
     }
     char * memStreamContent;
-    size_t memStreamSize = 15;
+    size_t memStreamSize;
 #ifndef __create_memstream__
     FILE * memStream = open_memstream(& memStreamContent, & memStreamSize);
 #else
@@ -113,10 +114,8 @@ class AvroWrap {
     if (!WriteAvroToStream(memStream, avroRecord, iface, & avroSchema)) {
       return Nan::ThrowError("could not write avro record to buffer");
     }
-      printf("%s\n", memStreamContent);
-      printf("%d\n", memStreamSize);
     info.GetReturnValue().Set(Nan::NewBuffer(memStreamContent,
-      228).ToLocalChecked());
+      memStreamSize).ToLocalChecked());
 
     avro_value_decref(avroRecord);
     avro_value_iface_decref(iface);
