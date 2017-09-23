@@ -5,20 +5,13 @@
 extern "C" {
 #include "AvroUtils.h"
 }
-#if __POSIX_VISIBLE < 200809
-#include "MemStream.h"
-#define __create_memstream__
-#endif
+#include "open_memstream.h"
 
 class AvroWrap {
  public:
   static NAN_MODULE_INIT(Init) {
     target->Set(Nan::New("write").ToLocalChecked(),
       Nan::New<v8::FunctionTemplate>(Write)->GetFunction());
-  }
-
-  static inline char * v8StringtoC_str(const v8::Local<v8::String> & v8Str) {
-    return * Nan::Utf8String(v8Str);
   }
 
   static bool V8ObjToStructArray(KeyValueStruct * * structArray,
@@ -43,12 +36,11 @@ class AvroWrap {
       if (currStruct == NULL) {
         return NULL;
       }
-      const char * key = v8StringtoC_str(keyName);
+      const char * key = * Nan::Utf8String(keyName);
       void * value_ptr = NULL;
       enum avroType currType;
       if (keyValue->IsString()) {
-//        const char * value = v8StringtoC_str(keyValue->ToString());
-          const char * value = * Nan::Utf8String(keyValue->ToString());
+        const char * value = * Nan::Utf8String(keyValue->ToString());
         value_ptr = (char *)malloc(sizeof(value));
         strcpy((char *)value_ptr, value);
         currType = AVRO_STRING_TYPE;
@@ -96,7 +88,7 @@ class AvroWrap {
     const char * strSchema = * Nan::Utf8String(info[0]->ToString());
     avro_schema_t avroSchema;
     if (!init_schema(strSchema, & avroSchema)) {
-       return Nan::ThrowError("cloud not parse schema");
+       return Nan::ThrowError("cloud not parse avro schema");
     }
     avro_value_iface_t * iface = avro_generic_class_from_schema(avroSchema);
     avro_value_t * avroRecord = SeralizeToAvro(avroStructs, keyLength,
@@ -107,11 +99,7 @@ class AvroWrap {
     }
     char * memStreamContent;
     size_t memStreamSize;
-#ifndef __create_memstream__
-    FILE * memStream = open_memstream(& memStreamContent, & memStreamSize);
-#else
     FILE * memStream = CreateMemStream(& memStreamContent, & memStreamSize);
-#endif
     if (!WriteAvroToStream(memStream, avroRecord, iface, & avroSchema)) {
       return Nan::ThrowError("could not write avro record to buffer");
     }
