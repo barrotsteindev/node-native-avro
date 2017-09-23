@@ -45,7 +45,6 @@ extern avro_value_t * SeralizeToAvro(struct KeyValueStruct * * avroStructArray,
       }
       delete_struct(currAvroStruct);
     }
-    free(avroStructArray);
     return avroRecord;
 }
 

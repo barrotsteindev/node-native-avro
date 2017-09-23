@@ -9,7 +9,7 @@ extern "C"
 
 extern bool delete_struct(struct KeyValueStruct * self) {
   free(self->key);
-  free((void *)self->value);
+  free(self->value);
   free(self);
   return true;
 }

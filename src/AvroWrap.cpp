@@ -101,6 +101,7 @@ class AvroWrap {
     avro_value_iface_t * iface = avro_generic_class_from_schema(avroSchema);
     avro_value_t * avroRecord = SeralizeToAvro(avroStructs, keyLength,
                                                & avroSchema, iface);
+    free(avroStructs);
     if (avroRecord == NULL) {
       return Nan::ThrowError("could not create avro record");
     }
@@ -120,6 +121,7 @@ class AvroWrap {
     avro_value_decref(avroRecord);
     avro_value_iface_decref(iface);
     avro_schema_decref(avroSchema);
+    free(avroRecord);
   }
 };
 
