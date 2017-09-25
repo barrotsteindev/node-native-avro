@@ -9,8 +9,9 @@
 #ifndef open_memstream_h
 #define open_memstream_h
 
-#if __POSIX_VISIBLE < 200809
+#if __POSIX_VISIBLE < 200809 && !__linux
 #include "MemStream.h"
+#warning "C Preprocessor got here!"
 #define __create_memstream__
 #endif
 
