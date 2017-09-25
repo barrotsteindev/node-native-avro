@@ -19,7 +19,7 @@ extern "C"
 {
 #endif
 
-FILE * Create_MemStream(char * * buf, size_t * size) {
+inline FILE * Create_MemStream(char * * buf, size_t * size) {
 #ifdef __create_memstream__
     return CreateMemStream(buf, size);
 #else
