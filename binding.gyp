@@ -7,9 +7,8 @@
       "include_dirs" : [
         "<!(node -e \"require('nan')\")",
         "<(module_root_dir)/",
-        "/usr/lib",
-        "/usr/local/lib",
-        "/include/"
+        "/usr/local/homebrew/lib",
+        "/usr/local/homebrew/include"
       ],
       'cflags!': [ '-fno-exceptions' ],
       'cflags_cc!': [ '-fno-exceptions' ]
